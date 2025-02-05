@@ -81,7 +81,43 @@ The basic workflow can be described in few steps:
 
 ## 4. How to implement PSO in Python?
 
-Implementing PSO in Python takes litterally few lines of code. 
+Implementing PSO in Python takes litterally few lines of code. Let's start by defining the needs for the Particle class. To define a particle, we need:
+- its position in an arbitrary n-dimensional space
+- its velocity in the same space
+- its best position
+- its best score
+
+To handle arbitrary n-dimensional space, we'll use a list of tuples which represents the bounds of each dimension of the search space: `bounds: List[Tuple[float, float]]`. Consequently, the current position, the best position and the velocity of each particle will be of size `n=len(bounds)`.
+
+```python
+class Particle:
+
+    def __init__(self, bounds: List[Tuple[float, float]]):
+
+        # First we initialize the position of the particle in the search space
+        self.position = np.array([np.random.uniform(low, high) for low, high in bounds])
+
+        # Then we initialize the velocity of the particle to 0
+        self.velocity = np.zeros(len(bounds))
+
+        # Then we initialize the best position of the particle to its current position
+        self.best_position = self.position.copy()
+
+        # Then we initialize the best score of the particle to infinity
+        self.best_score = float('inf')
+```
+
+Then we need to define a method to update the velocity of each particle. This method will take as input the global best position, the inertia weight, the cognitive and social constants. To avoid particles to be out of bounds of the search space, we'll use the `np.clip` function.
+
+```python
+def update_velocity(self, global_best, w=0.7, c1=1.5, c2=1.5):
+    r1, r2 = np.random.rand(), np.random.rand()
+    cognitive = c1 * r1 * (self.best_position - self.position)
+    social = c2 * r2 * (global_best - self.position)
+    self.velocity = w * self.velocity + cognitive + social
+    # np.clip for each bound of each dimension
+    self.velocity = np.clip(self.velocity, [b[0] for b in bounds], [b[1] for b in bounds])
+```
 
 Let's start with implementing the `Particle` class:
 
@@ -117,6 +153,8 @@ Now we can implement the `Swarm` class where we can pass a function to optimize:
 ```python
 class Swarm:
     def __init__(self, num_particles, dim, bounds, max_iter, optimize_function):
+        xbounds = bounds[0]
+        ybounds = bounds[1]
         self.particles = [Particle(dim, bounds) for _ in range(num_particles)]
         self.global_best = min(self.particles, key=lambda p: p.best_score).best_position
         self.optimize_function = optimize_function

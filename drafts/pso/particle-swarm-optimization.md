@@ -245,3 +245,5 @@ I don't already what the next article will be about but certainly about another 
 [3] Rosenbrock, H.H. (1960). An automatic method for finding the greatest or least value of a function. The Computer Journal. 3 (3): 175–184.
 
 [4] Wikipedia page on the Rosenbrock function: https://en.wikipedia.org/wiki/Rosenbrock_function
+
+[?] Tharwat, A., Gaber, T., Hassanien, A. E., & Elnaghi, B. E. (2017). Particle swarm optimization: a tutorial. Handbook of research on machine learning innovations and trends, 614-635.

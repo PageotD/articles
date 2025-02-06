@@ -41,4 +41,5 @@ plt.quiver(x[0], x[1], inertia[0], inertia[1], color="yellow", angles="xy", scal
 # plot scatter empty xupd
 plt.scatter(xupd[0], xupd[1], color="black", s=50) 
 
-plt.show()
+#plt.show()
+plt.savefig("particle_composition.png")

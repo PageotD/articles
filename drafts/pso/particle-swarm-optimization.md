@@ -201,9 +201,7 @@ def rosenbrock(x, y):
     return (1 - x)**2 + 100*(y - x**2)**2
 ```
 
-
-
-Congrats!You have successfully implemented PSO in Python and optimized a 2D benchmark function. :smile:
+![rosenbrock](rosenbrock.png)
 
 ## References
 

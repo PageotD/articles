@@ -90,6 +90,8 @@ Implementing PSO in Python takes litterally few lines of code. Let's start by de
 To handle arbitrary n-dimensional space, we'll use a list of tuples which represents the bounds of each dimension of the search space: `bounds: List[Tuple[float, float]]`. Consequently, the current position, the best position and the velocity of each particle will be of size `n=len(bounds)`.
 
 ```python
+import numpy as np
+
 class Particle:
 
     def __init__(self, bounds: List[Tuple[float, float]]):
@@ -107,78 +109,71 @@ class Particle:
         self.best_score = float('inf')
 ```
 
-Then we need to define a method to update the velocity of each particle. This method will take as input the global best position, the inertia weight, the cognitive and social constants. To avoid particles to be out of bounds of the search space, we'll use the `np.clip` function.
-
-```python
-def update_velocity(self, global_best, w=0.7, c1=1.5, c2=1.5):
-    r1, r2 = np.random.rand(), np.random.rand()
-    cognitive = c1 * r1 * (self.best_position - self.position)
-    social = c2 * r2 * (global_best - self.position)
-    self.velocity = w * self.velocity + cognitive + social
-    # np.clip for each bound of each dimension
-    self.velocity = np.clip(self.velocity, [b[0] for b in bounds], [b[1] for b in bounds])
-```
-
-Let's start with implementing the `Particle` class:
+Then we need to define a method to update the velocity of each particle and another to update the position in search space. The `update_velocity` method will take as input the global best position, the inertia weight, the cognitive and social constants and the `update_position` method will take as input the bounds of the search space. To avoid particles to be out of bounds of the search space, we'll use the `np.clip` function in the `update_position` method.
 
 ```python
 import numpy as np
 
 class Particle:
 
-    def __init__(self, dim, bounds):
-        self.position = np.random.uniform(xbounds[0], xbounds[1], dim)
-        self.velocity = np.zeros(dim)
-        self.best_position = self.position.copy()
-        self.best_score = rastrigin(self.position)
+    # ... initialization ...
 
-    def update_velocity(particle, global_best, w=0.7, c1=1.5, c2=1.5):
+    def update_velocity(self, global_best, w=0.7, c1=1.5, c2=1.5):
         r1, r2 = np.random.rand(), np.random.rand()
-        cognitive = c1 * r1 * (particle.best_position - particle.position)
-        social = c2 * r2 * (global_best - particle.position)
-        particle.velocity = w * particle.velocity + cognitive + social
-
-# This part is optional and can be used to plot the resulting swarm in a 2D space bounded by -5.12 and 5.12 in each dimension.
-if __name__ == "__main__":
-    import matplotlib.pyplot as plt
-    particle = Particle(20, (-5.12, 5.12))
-    plt.scatter(particle.position[0], particle.position[1], color="black", s=50)
-    plt.show()
+        cognitive = c1 * r1 * (self.best_position - self.position)
+        social = c2 * r2 * (global_best - self.position)
+        self.velocity = w * self.velocity + cognitive + social
+    
+    def update_position(self, bounds: List[Tuple[float, float]]):
+        # np.clip for each dimension
+        self.position += self.velocity
+        self.position = np.clip(self.position, [b[0] for b in bounds], [b[1] for b in bounds])
 ```
 
-In this class, we describe the particle's position, velocity, best position and best score. We also define a function to update the particle's velocity based on the global best position, the cognitive and social constants and the inertia weight.
+Now that we have a class to describe each particle, we can define a class to describe the swarm. The swarm will be composed of a list of particles and a global best position. It must also handle the inertia weight, the cognitive and social constants such as the function to optimize.
 
-Now we can implement the `Swarm` class where we can pass a function to optimize:
+Let's start by defining the swarm class init method:
 
 ```python
 class Swarm:
-    def __init__(self, num_particles, dim, bounds, max_iter, optimize_function):
-        xbounds = bounds[0]
-        ybounds = bounds[1]
-        self.particles = [Particle(dim, bounds) for _ in range(num_particles)]
+
+    def __init__(self, num_particles, bounds, max_iter, w, c1, c2, optimize_function):
+        # First we initialize the swarm with a list of particles
+        self.particles = [Particle(bounds) for _ in range(num_particles)]
+        # Then we initialize the global best position
         self.global_best = min(self.particles, key=lambda p: p.best_score).best_position
+        # Then we initialize the function to optimize and the max number of iterations
         self.optimize_function = optimize_function
         self.max_iter = max_iter
+        # Finally we initialize the inertia weight, the cognitive and social constants
+        self.w = w
+        self.c1 = c1
+        self.c2 = c2
+```
+
+Then we have to define a method to update the swarm throughout the iterations.
+
+```python
+class Swarm:
+
+    # ... initialization ...
 
     def optimize(self):
-        for _ in range(self.max_iter):
+        for i in range(self.max_iter):
             for particle in self.particles:
-                self.update_velocity(particle, self.global_best)
-                particle.position += particle.velocity
-                score = self.optimize_function(particle.position)
-
-                if score < particle.best_score:
-                    particle.best_score = score
-                    particle.best_position = particle.position.copy()
-
+                particle.update_velocity(self.global_best, self.w, self.c1, self.c2)
+                particle.update_position(bounds) # <-- not implemented
             self.global_best = min(self.particles, key=lambda p: p.best_score).best_position
-
         return self.global_best
 ```
 
-In this class, we describe the swarm's particles, the global best position and the function to optimize. We also define a function to update the swarm's best position and the particles' velocity.
+And...that's it! Congratulations! You have successfully implemented PSO in Python.
+So, what's next? Let's optimize a 2D benchmark function.
 
-Now we can choose a 2D benchmark function and optimize it with PSO:
+## 5. Optimizing a 2D benchmark function
+
+Benchmark functions are standard mathematical functions used to test and compare optimization algorithms. They allow to evaluate how well an algorithm performs on finding the best solution in a given problem domain. Each is designed  to highlight different optimization difficulties and challenges, such as multiple local minima, flat regions, etc.
+
 
 ```python
 def rastrigin(x):

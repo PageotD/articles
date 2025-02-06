@@ -34,7 +34,7 @@ ax2.set_zlabel("Function Value")
 
 # Show the plots
 plt.tight_layout()
-#plt.show()
+plt.show()
 
 # Save the plots as images
 fig.savefig("rosenbrock.png")

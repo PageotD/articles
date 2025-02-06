@@ -1,6 +1,6 @@
 > **Article in progress**
 
-# Particle Swarm Optimization and It's implementation in Python
+# Particle Swarm Optimization and Its implementation in Python
 
 _An easy entry point to global optimization._
 
@@ -18,7 +18,7 @@ Heard of particle swarm optimization (PSO) but don't know where to start? In thi
 
 ## 1. What is Particle Swarm Optimization?
 
-Particle Swarm Optimization (PSO), proposed by Eberhart and Kennedy in 1995 [1], is a global optimization algorithm designed to simulate the behavoir of flocking birds or school of fish.
+Particle Swarm Optimization (PSO), proposed by Eberhart and Kennedy in 1995 [1], is a global optimization algorithm designed to simulate the behavior of flocking birds or schools of fish.
 
 PSO is used to solve optimization problems in many scientific and engineering domains, including [2]:
 - antenna design
@@ -37,7 +37,7 @@ It's a simple algorithm that is easy to implement and understand, making it a go
 
 Another advantage is that PSO can be easily parallelized, making it a great choice for distributed computing environments.
 
-Compare to local optimization algorithms, PSO does not rely on the gradient of the objective function, making it a good choice for problems where the gradient is not available.
+Compared to local optimization algorithms, PSO does not rely on the gradient of the objective function, making it a good choice for problems where the gradient is not available.
 
 What sets PSO apart from other global optimization methods (such as Genetic Algorithms or Simulated Annealing) is its swarm-based approach. Instead of relying on operations like mutation or crossover, PSO updates solutions by mimicking how individuals in a group learn from their own experiences and the success of others. This results in fast convergence and robust performance, making it a go-to choice for engineering, machine learning, and more.
 
@@ -45,7 +45,7 @@ What sets PSO apart from other global optimization methods (such as Genetic Algo
 | :---: | :---: | :---: | :---: |
 | Derivative-Free?	|  Yes |  Yes |  No |
 | Handles Local Minima?	|  Yes	| Yes | No (can get stuck) |
-| Speed	| Fast	| Varies |Very fast |
+| Speed	| Fast	| Varies |Very fast (for smooth functions) |
 
 
 ## 3. How does PSO work?
@@ -151,6 +151,7 @@ class Swarm:
     def __init__(self, num_particles, bounds, max_iter, w, c1, c2, optimize_function):
         # First we initialize the swarm with a list of particles
         self.particles = [Particle(bounds) for _ in range(num_particles)]
+        self.bounds = bounds
         # Then we initialize the global best position and best score
         self.global_best_position = min(self.particles, key=lambda p: p.best_score).best_position
         self.global_best_score = min(self.particles, key=lambda p: p.best_score).best_score
@@ -174,7 +175,7 @@ class Swarm:
         for i in range(self.max_iter):
             for particle in self.particles:
                 particle.update_velocity(self.global_best, self.w, self.c1, self.c2)
-                particle.update_position(bounds)
+                particle.update_position(self.bounds)
                 particle.evaluate(self.optimize_function)
             self.global_best = min(self.particles, key=lambda p: p.best_score).best_position
             self.global_best_score = min(self.particles, key=lambda p: p.best_score).best_score
@@ -188,23 +189,59 @@ So, what's next? Let's optimize a 2D benchmark function.
 
 Benchmark functions are standard mathematical functions used to test and compare optimization algorithms. They allow to evaluate how well an algorithm performs on finding the best solution in a given problem domain. Each is designed  to highlight different optimization difficulties and challenges, such as multiple local minima, flat regions, etc.
 
-Here, we will use the Rosenbrock function which is defined as follows:
-$$f(x, y) = (1 - x)^2 + 100(y - x^2)^2\ ,$$
-where $x$ and $y$ are the coordinates of a point in a 2D space.
+Here, we will use the Rosenbrock function. The Rosenbrock function is a non-convex function, introduced by Howard H. Rosenbrock in 1960 and is defined as follows[3,4]:
+$$f(x, y) = (a - x)^2 + b(y - x^2)^2\ ,$$
+where $x$ and $y$ are the coordinates of a point in a 2D space. Parameters $a$ and $b$ control the shape of the function and are generally fixed at $1$ and $100$, respectively.
+The global minimum of the function is located at $(x, y)=(a, a^2)$.
 
 We can implement this function in Python as follows:
 
 ```python
 import numpy as np
 
-def rosenbrock(x, y):
+def rosenbrock(coordinates):
+    # Here the coordinates is the position of the particle
+    x, y = coordinates
     return (1 - x)**2 + 100*(y - x**2)**2
 ```
 
 ![rosenbrock](rosenbrock.png)
 
+Now that we have defined the Rosenbrock function, let's optimize it using PSO.
+
+```python
+import numpy as np
+class Particle:
+    ...
+    
+class Swarm:
+    ...
+
+def rosenbrock(coordinates):
+    ...
+
+if __name__ == "__main__":
+    bounds = [(-2, 2), (-1, 3)]
+    swarm = Swarm(num_particles=10, bounds=bounds, max_iter=100, w=0.5, c1=0.5, c2=0.5, optimize_function=rosenbrock)
+    best_position, best_score = swarm.optimize()
+    print(f"Best position: {best_position}")
+    print(f"Best score: {best_score}")
+```
+
+ADD DISTRIBUTION OF PARTICLES AT START AND END OF OPTIMIZATION
+
+## 6. What's Next?
+
+Now that you’ve implemented PSO from scratch, try tweaking the parameters! How does changing the inertia weight affect convergence? What happens if you optimize a different function?
+
+I don't already what the next article will be about but certainly about another global optimization algorithm. 
+
 ## References
 
 [1] Eberhart, R. H. and Kennedy, J. C. (1995). Particle swarm optimization. IEEE Transactions on Evolutionary Computation, 3(2), 182-197.
 
-[2] POLI, Riccardo. An analysis of publications on particle swarm optimization applications. Essex, UK: Department of Computer Science, University of Essex, 2007.
+[2] Poli, Riccardo (2007). An analysis of publications on particle swarm optimization applications. Essex, UK: Department of Computer Science, University of Essex.
+
+[3] Rosenbrock, H.H. (1960). An automatic method for finding the greatest or least value of a function. The Computer Journal. 3 (3): 175–184.
+
+[4] Wikipedia page on the Rosenbrock function: https://en.wikipedia.org/wiki/Rosenbrock_function

@@ -177,8 +177,8 @@ class Swarm:
                 particle.update_velocity(self.global_best, self.w, self.c1, self.c2)
                 particle.update_position(self.bounds)
                 particle.evaluate(self.optimize_function)
-            self.global_best = min(self.particles, key=lambda p: p.best_score).best_position
-            self.global_best_score = min(self.particles, key=lambda p: p.best_score).best_score
+                self.global_best = min(self.particles, key=lambda p: p.best_score).best_position
+                self.global_best_score = min(self.particles, key=lambda p: p.best_score).best_score
         return self.global_best, self.global_best_score
 ```
 

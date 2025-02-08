@@ -22,27 +22,10 @@ Particle Swarm Optimization (PSO), proposed by Eberhart and Kennedy in 1995 [1],
 
 PSO is widely used to solve optimization problems in many scientific and engineering domains [2] including: antenna design, biological, medical and pharmaceutical applications, design and optimisation of communication networks, neural network training, robotics and much more. Its popularity is essentially due to its simplicity to use (few control parameters), its simplicity to implement (simple workflow and equations) and its efficiency to find near-optimal solutions.
 
-## 2. Why PSO is useful?
-Unlike local optimization techniques (like Gradient Descent), PSO does not require derivatives, making it suitable for messy, real-world functions with multiple peaks and valleys.
-
-PSO is a great entry point into optimization because of its intuitive mechanics and broad applicability. 
-
-It's a simple algorithm that is easy to implement and understand, making it a good choice for beginners and anyone who wants to try out optimization algorithms.
-
-Another advantage is that PSO can be easily parallelized, making it a great choice for distributed computing environments.
-
-Compared to local optimization algorithms, PSO does not rely on the gradient of the objective function, making it a good choice for problems where the gradient is not available.
-
-What sets PSO apart from other global optimization methods (such as Genetic Algorithms or Simulated Annealing) is its swarm-based approach. Instead of relying on operations like mutation or crossover, PSO updates solutions by mimicking how individuals in a group learn from their own experiences and the success of others. This results in fast convergence and robust performance, making it a go-to choice for engineering, machine learning, and more.
-
-| Feature | PSO | Other global optimization (GA, SA) | Local Optimization (Gradient Descent) |
-| :---: | :---: | :---: | :---: |
-| Derivative-Free?	|  Yes |  Yes |  No |
-| Handles Local Minima?	|  Yes	| Yes | No (can get stuck) |
-| Speed	| Fast	| Varies |Very fast (for smooth functions) |
+Another advantage is that PSO can be easily parallelized, making it a great choice for distributed computing environments. However, we will not focus on this aspect in this article.
 
 
-## 3. How does PSO work?
+## 2. How does PSO work?
 
 The principle of PSO is quite simple and consists in changing the position and velocity of each particle in the swarm to improve the overall best position. In its simple form, PSO consists of the two following equations:
 

@@ -27,27 +27,32 @@ Another advantage is that PSO can be easily parallelized, making it a great choi
 
 ## 2. How does PSO work?
 
-The principle of PSO is quite simple and consists in changing the position and velocity of each particle in the swarm to improve the overall best position. In its simple form, PSO consists of the two following equations:
+As I said before, the principle of PSO is quite simple. It consists in changing the position and velocity of each particle in the swarm to improve the overall best position. In its simple form, PSO consists of the two following equations:
 
-$$x_{i}^{k} = x_{i}^{k-1} + v_{i}^{k}\ ,$$
-$$v_{i}^{k} = \omega v_{i}^{k} + c_{1} r_{1} (p_{g}^{k-1} - x_{i}^{k-1}) + c_{2} r_{2} (p_{i}^{k-1} - x_{i}^{k-1})\ ,$$
+$$x_{i}(t+1) = x_{i}(t) + v_{i}(t+1)\ ,$$
+$$v_{i}(t+1) = \omega v_{i}(t) + c_{1} r_{1} (G - x_{i}(t)) + c_{2} r_{2} (P_{i} - x_{i}(t))\ ,$$
 
 where:
-- $x_{i}^{k}$ is the position of particle $i$ at iteration $k$
-- $v_{i}^{k}$ is the velocity of particle $i$ at iteration $k$
-- $p_{g}^{k-1}$ is the best global position reached by the swarm
-- $p_{i}^{k-1}$ is the best position reached by particle $i$
+- $t$ is the current iteration
+- $x_{i}$ is the position of particle $i$
+- $v_{i}$ is the velocity of particle $i$
+- $G$ is the best global position reached by the swarm
+- $P_{i}$ is the best position reached by particle $i$
 - $r_{1}$ and $r_{2}$ are random numbers between 0 and 1
 - $\omega$ is the inertia weight
 - $c_{1}$ and $c_{2}$ are the social and cognitive constants respectively
 
-The velocity formula can be split into three terms:
-- **Inertia term**: $\omega v_{i}^{k}$ <br>
+First, let's decompose the second formula into its three terms to best understand how PSO works. The three terms are:
+- **Inertia term**: $\omega v_{i}(t)$ <br>
     which controls how much the particle's velocity is influenced by its own previous velocity
-- **Social term**: $c_{1} r_{1} (p_{g}^{k-1} - x_{i}^{k-1})$ <br>
+- **Social term**: $c_{1} r_{1} (G - x_{i}(t))$ <br>
     which controls how much the particle is influenced by the swarm's best position
-- **Cognitive term**: $c_{2} r_{2} (p_{i}^{k-1} - x_{i}^{k-1})$ <br>
+- **Cognitive term**: $c_{2} r_{2} (P_{i} - x_{i}(t))$ <br>
     which controls how much the particle is influenced by its own best position
+
+It means that the displacement of a particle in the search space (first equation) is a combination of its own velocity, the swarm's best position and its own best position. High inertia and high social constant will favorise exploration of the search space, while low inertia and high cognitive constant will favorise exploitation, by the particle, of its own best position. 
+
+The inertia weight is usually set to a value between 0.4 and 0.9 (typical value is around 0.7) which allows to slow down the particle's velocity throughout the iterations. The cognitive and social constants are usually set between 1.0 and 2.5 (typical values are around 1.49).
 
 The basic workflow can be described in few steps:
 1. Initialize the swarm with random positions and velocities

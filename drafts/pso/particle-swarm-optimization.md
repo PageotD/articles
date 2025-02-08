@@ -18,15 +18,9 @@ Heard of particle swarm optimization (PSO) but don't know where to start? In thi
 
 ## 1. What is Particle Swarm Optimization?
 
-Particle Swarm Optimization (PSO), proposed by Eberhart and Kennedy in 1995 [1], is a global optimization algorithm designed to simulate the behavior of flocking birds or schools of fish.
+Particle Swarm Optimization (PSO), proposed by Eberhart and Kennedy in 1995 [1], is a stochastic, population-based, global optimization algorithm designed to simulate the behavior of flocking birds or schools of fish. It means that to find a solution, PSO relies on multiple candidate solutions (population-based) which explore the search space with a certain degree of randomness (stochastic). The specificity of PSO is that it uses social and cognitive components to mimic the behavior of a swarm. This point will be detailed in the next section.
 
-PSO is used to solve optimization problems in many scientific and engineering domains, including [2]:
-- antenna design
-- biological, medical and pharmaceutical applications 
-- design and optimisation of communication networks
-- neural network training
-- robotics  
-- and much more.
+PSO is widely used to solve optimization problems in many scientific and engineering domains [2] including: antenna design, biological, medical and pharmaceutical applications, design and optimisation of communication networks, neural network training, robotics and much more. Its popularity is essentially due to its simplicity to use (few control parameters), its simplicity to implement (simple workflow and equations) and its efficiency to find near-optimal solutions.
 
 ## 2. Why PSO is useful?
 Unlike local optimization techniques (like Gradient Descent), PSO does not require derivatives, making it suitable for messy, real-world functions with multiple peaks and valleys.

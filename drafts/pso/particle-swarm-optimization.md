@@ -54,7 +54,7 @@ It means that the displacement of a particle in the search space (first equation
 
 The inertia weight is usually set to a value between 0.4 and 0.9 (typical value is around $0.7$) which allows to slow down the particle's velocity throughout the iterations. The cognitive and social constants are usually set between 1.0 and 2.5 (typical values are around $1.49$ with $c_1=c_2$).
 
-The true difficulty of PSO lies in the balance between exploration of the search space and exploitation of the best positions found. This is where the random numbers $r_{1}$ and $r_{2}$ come into play. These two random numbers (drawn from a uniform distribution [0, 1]) allow to ensure some diversity in the behavior of the particles, and to avoid premature convergence to a local minimum.
+The true difficulty of PSO lies in the balance between exploration of the search space and exploitation of the best positions found. This is where the random numbers $r_{1}$ and $r_{2}$ come into play. These two random numbers (drawn from a uniform distribution [0, 1]) allow to ensure some diversity in the behavior of the particles, and to avoid premature convergence to a local minimum (all the particles converge to a local minimum before reaching the global minimum).
 
 The basic workflow can be described in few steps:
 1. Initialize the swarm with random positions and velocities

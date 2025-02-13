@@ -85,9 +85,12 @@ Then, we need to define a class to describe the swarm. The swarm will have the f
 
 A particle is an object with a position and a velocity and which evolves in an arbitrary n-dimensional space.
 
-To handle arbitrary n-dimensional space, we'll use a list of tuples which represents the bounds of each dimension of the search space: `bounds: List[Tuple[float, float]]`. Consequently, the current position, the best position and the velocity of each particle will have a size equal to the number of dimensions (`len(bounds)`). The score and best score of each particle correspond to the value of the objective function at the current position and the best position respectively. Since the goal will be to find the minimum of the objective function, the scores will be initialized to infinity to ensure that the first evaluation is better that the initial value. If we want to find the maximum of the objective function, we'll need to initialiaze the score and the best score to negative infinity.
+To handle arbitrary n-dimensional space, we'll use a list of tuples which represents the bounds of each dimension of the search space: `bounds: List[Tuple[float, float]]`. Consequently, the current position, the best position and the velocity of each particle will have a size equal to the number of dimensions (`len(bounds)`). The score and best score of each particle correspond to the value of the objective function at the current position and the best position respectively. Since the goal will be to find the minimum of the objective function, the scores will be initialized to infinity to ensure that the first evaluation is better that the initial value. If we want to find the maximum of the objective function, we'll need to initialize the score and the best score to negative infinity.
 
 ```python
+import numpy as np
+from typing import Callable, List, Tuple
+
 import numpy as np
 
 class Particle:
@@ -147,9 +150,9 @@ class Particle:
         fitness_function : Callable
             The objective function to optimize
         """
-        self.fitness = fitness_function(self.position)
-        if self.fitness < self.pbest_value:
-            self.pbest_value = self.fitness
+        self.score = fitness_function(self.position)
+        if self.score < self.pbest_score:
+            self.pbest_score = self.score
             self.pbest_position = self.position.copy()
 
     def update_velocity(self, gbest_position, inertia, cognitive, social) -> None:
@@ -248,16 +251,21 @@ class Swarm:
         """
         for particle in self.particles:  # Initial evaluation of particles
             particle.evaluate(self.fitness_function)
-            if particle.fitness < self.gbest_score:
-                self.gbest_score = particle.fitness
+            if particle.score < self.gbest_score:
+                self.gbest_score = particle.score
                 self.gbest_position = particle.position.copy()
+            
+        print(particle.score, self.gbest_score)
         
-        for _ in range(num_iterations): # Start optimization
+        for iter in range(num_iterations): # Start optimization
+            print("ITER::", iter, self.gbest_score)
             for particle in self.particles:
                 particle.update_velocity(self.gbest_position, inertia, cognitive, social)
                 particle.update_position(self.bounds)
                 particle.evaluate(self.fitness_function)
-                if particle.fitness < self.gbest_score:
+                print("EVALUATE::", particle.score)
+                print(particle.score < self.gbest_score)
+                if particle.score < self.gbest_score:
                     self.gbest_score = particle.score
                     self.gbest_position = particle.position.copy()
 
@@ -362,7 +370,7 @@ class Swarm:
 And...that's it! Congratulations! You have successfully implemented PSO in Python.
 So, what's next? Let's optimize a 2D benchmark function.
 
-## 5. Optimizing a 2D benchmark function
+## 4. Optimizing a 2D benchmark function
 
 Benchmark functions are standard mathematical functions used to test and compare optimization algorithms. They allow to evaluate how well an algorithm performs on finding the best solution in a given problem domain. Each is designed  to highlight different optimization difficulties and challenges, such as multiple local minima, flat regions, etc.
 

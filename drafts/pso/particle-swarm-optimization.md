@@ -56,22 +56,214 @@ The inertia weight is usually set to a value between 0.4 and 0.9 (typical value 
 
 The true difficulty of PSO lies in the balance between exploration of the search space and exploitation of the best positions found. This is where the random numbers $r_{1}$ and $r_{2}$ come into play. These two random numbers (drawn from a uniform distribution [0, 1]) allow to ensure some diversity in the behavior of the particles, and to avoid premature convergence to a local minimum (all the particles converge to a local minimum before reaching the global minimum).
 
-The basic workflow can be described in few steps:
+To conclude on this section, and before starting implementation, we have to take a look at the basic workflow of PSO. This workflow can be summarized in few steps:
 1. Initialize the swarm with random positions and velocities
 2. Evaluate the fitness of each particle
 3. Update the best position and velocity of each particle
 4. Update the swarm best position
 5. Repeat steps 2-4 until a stopping criterion is met
 
-## 4. How to implement PSO in Python?
+The stopping criterion can be a maximum number of iteration, the number of times the swarm best position has not changed, a minimal fitness threshold, etc. or a combination of multiple stopping criteria. To keep it simple, we will use only a maximum number of iterations as a stopping criterion.
 
-Implementing PSO in Python takes litterally few lines of code. Let's start by defining the needs for the Particle class. To define a particle, we need:
+## 3. How to implement PSO in Python?
+
+Implementing PSO in Python takes litterally few lines of code. Let's start by defining the needs.
+
+First, we need to define a class to describe each particle. The particle will have the following attributes:
 - its position in an arbitrary n-dimensional space
 - its velocity in the same space
 - its best position
 - its best score
 
-To handle arbitrary n-dimensional space, we'll use a list of tuples which represents the bounds of each dimension of the search space: `bounds: List[Tuple[float, float]]`. Consequently, the current position, the best position and the velocity of each particle will be of size `n=len(bounds)`. The score and best score of each particle correspond to the value of the objective function at the current position and the best position respectively. The scores will be initialized to infinity.
+Then, we need to define a class to describe the swarm. The swarm will have the following attributes:
+- a list of particles
+- the global best position
+- the global best score
+- the objective function to optimize
+- the stopping criterion (maximum number of iterations)
+
+
+A particle is an object with a position and a velocity and which evolves in an arbitrary n-dimensional space.
+
+To handle arbitrary n-dimensional space, we'll use a list of tuples which represents the bounds of each dimension of the search space: `bounds: List[Tuple[float, float]]`. Consequently, the current position, the best position and the velocity of each particle will have a size equal to the number of dimensions (`len(bounds)`). The score and best score of each particle correspond to the value of the objective function at the current position and the best position respectively. Since the goal will be to find the minimum of the objective function, the scores will be initialized to infinity to ensure that the first evaluation is better that the initial value. If we want to find the maximum of the objective function, we'll need to initialiaze the score and the best score to negative infinity.
+
+```python
+import numpy as np
+
+class Particle:
+    """
+    A particle is an object with a position and a velocity and which evolves in an arbitrary
+    n-dimensional space.
+
+    Attributes
+    ----------
+    position : np.ndarray
+        The position of the particle in the search space
+    velocity : np.ndarray
+        The velocity of the particle in the search space
+    best_position : np.ndarray
+        The best position of the particle in the search space
+    best_score : float
+        The best score of the particle
+
+    Methods
+    --------
+    update_velocity(self, gbest_position, inertia, cognitive, social):
+        Update the velocity of the particle
+    update_position(self, bounds: List[Tuple[float, float]]):
+        Update the position of the particle
+    evaluate(self, fitness_function: Callable):
+        Evaluate the fitness of the particle
+    """
+
+    def __init__(self, bounds: List[Tuple[float, float]]) -> None:
+        """
+        Initialize the position, velocity, score, best position and best score of the particle
+
+        Parameters
+        ----------
+        bounds : List[Tuple[float, float]]
+            The bounds of the search space
+        """
+
+        # Initialize position of the particle in the search space and velocity to 0
+        self.position = np.array([np.random.uniform(low, high) for low, high in bounds])
+        self.velocity = np.zeros(len(bounds), dtype=np.float32)
+        
+        # Initialize score and best score to infinity
+        self.score = float('inf')
+        self.pbest_score = float('inf')
+
+        # Initialize best position of the particle to its current position
+        self.pbest_position = self.position.copy()
+    
+    def evaluate(self, fitness_function: Callable) -> None:
+        """
+        Evaluate the score of the particle and update the best position and score if the score is
+        lower than the current best score
+
+        Parameters
+        ----------
+        fitness_function : Callable
+            The objective function to optimize
+        """
+        self.fitness = fitness_function(self.position)
+        if self.fitness < self.pbest_value:
+            self.pbest_value = self.fitness
+            self.pbest_position = self.position.copy()
+
+    def update_velocity(self, gbest_position, inertia, cognitive, social) -> None:
+        """
+        Update the velocity of the particle
+
+        Parameters
+        ----------
+        gbest_position : np.ndarray
+            The global best position of the swarm
+        inertia : float
+            The inertia weight
+        cognitive : float
+            The cognitive constant
+        social : float
+            The social constant
+        """
+        r1, r2 = np.random.rand(), np.random.rand()
+        cognitive = cognitive * r1 * (self.pbest_position - self.position)
+        social = social * r2 * (gbest_position - self.position)
+        self.velocity = inertia * self.velocity + cognitive + social
+
+    def update_position(self, bounds: List[Tuple[float, float]]) -> None:
+        """
+        Update the position of the particle
+
+        Parameters
+        ----------
+        bounds : List[Tuple[float, float]]
+            The bounds of the search space
+        """
+        self.position += self.velocity
+        self.position = np.clip(self.position, [b[0] for b in bounds], [b[1] for b in bounds])
+
+class Swarm:
+    """
+    A swarm is a collection of particles and which evolves in an arbitrary n-dimensional space.
+
+    Attributes
+    ----------
+    particles : List[Particle]
+        The particles of the swarm
+    gbest_position : np.ndarray
+        The global best position of the swarm
+    gbest_value : float
+        The global best score of the swarm
+    fitness_function : Callable
+        The objective function to optimize
+    bounds : List[Tuple[float, float]]
+        The bounds of the search space
+
+    Methods
+    --------
+    optimize(self, num_iterations, inertia=0.7, cognitive=2.1, social=2.1):
+        Optimize the objective function
+    """
+
+    def __init__(self, num_particles: int, bounds: List[Tuple[float, float]], fitness_function: Callable) -> None:
+        """
+        Initialize the swarm
+
+        Parameters
+        ----------
+        num_particles : int
+            The number of particles in the swarm
+        bounds : List[Tuple[float, float]]
+            The bounds of the search space
+        fitness_function : Callable
+            The objective function to optimize
+        """
+        self.particles = [Particle(bounds) for _ in range(num_particles)]
+        self.gbest_position = None
+        self.gbest_score = float('inf')
+        self.fitness_function = fitness_function
+        self.bounds = bounds
+
+    def optimize(self, num_iterations: int, inertia: float=0.7, cognitive: float=2.1, social: float=2.1) -> Tuple[np.ndarray, float]:
+        """
+        Optimize the objective function
+
+        Parameters
+        ----------
+        num_iterations : int
+            The number of iterations
+        inertia : float
+            The inertia weight
+        cognitive : float
+            The cognitive constant
+        social : float
+            The social constant
+
+        Returns
+        -------
+        Tuple[np.ndarray, float]
+            The global best position and the global best score
+        """
+        for particle in self.particles:  # Initial evaluation of particles
+            particle.evaluate(self.fitness_function)
+            if particle.fitness < self.gbest_score:
+                self.gbest_score = particle.fitness
+                self.gbest_position = particle.position.copy()
+        
+        for _ in range(num_iterations): # Start optimization
+            for particle in self.particles:
+                particle.update_velocity(self.gbest_position, inertia, cognitive, social)
+                particle.update_position(self.bounds)
+                particle.evaluate(self.fitness_function)
+                if particle.fitness < self.gbest_score:
+                    self.gbest_score = particle.score
+                    self.gbest_position = particle.position.copy()
+
+        return self.gbest_position, self.gbest_score
+```
+
 
 ```python
 import numpy as np
@@ -80,19 +272,19 @@ class Particle:
 
     def __init__(self, bounds: List[Tuple[float, float]]):
 
-        # First we initialize the position of the particle in the search space
+        # Initialize the position of the particle in the search space
         self.position = np.array([np.random.uniform(low, high) for low, high in bounds])
 
-        # Then we initialize the velocity of the particle to 0
+        # Initialize the velocity of the particle to 0
         self.velocity = np.zeros(len(bounds))
 
-        # Then the score of the particle is initialized to infinity
+        # Initialize the score to infinity
         self.score = float('inf')
 
-        # Then we initialize the best position of the particle to its current position
+        # Initialize the best position of the particle to its current position
         self.best_position = self.position.copy()
 
-        # Then we initialize the best score of the particle to infinity
+        # Initialize the best score to infinity
         self.best_score = float('inf')
 ```
 
@@ -157,6 +349,7 @@ class Swarm:
 
     def optimize(self):
         for i in range(self.max_iter):
+
             for particle in self.particles:
                 particle.update_velocity(self.global_best, self.w, self.c1, self.c2)
                 particle.update_position(self.bounds)

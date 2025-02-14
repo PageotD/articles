@@ -40,4 +40,5 @@ plot_particle_movement(ax2, inertia=1.0, social=0.5, cognitive=1.0)
 plot_particle_movement(ax3, inertia=0.5, social=1.0, cognitive=1.0)
 
 plt.tight_layout()
+plt.savefig("particle_composition.png")
 plt.show()

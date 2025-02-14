@@ -52,6 +52,10 @@ First, let's decompose the second formula into its three terms to best understan
 
 It means that the displacement of a particle in the search space (first equation) is a combination of its own velocity, the swarm's best position and its own best position. High inertia and high social constant will favorise exploration of the search space, while low inertia and high cognitive constant will favorise exploitation of the best positions found. 
 
+The plot below shows how the particle's velocity is influenced by the three terms and how the values of inertia, social and cognitive constants affect the particle's future position.
+
+![PSO composition](particle_composition.png)
+
 The inertia weight is usually set to a value between 0.4 and 0.9 (typical value is around $0.7$) which allows to slow down the particle's velocity throughout the iterations. The cognitive and social constants are usually set between 1.0 and 2.5 (typical values are around $1.49$ with $c_1=c_2$).
 
 The true difficulty of PSO lies in the balance between exploration of the search space and exploitation of the best positions found. This is where the random numbers $r_{1}$ and $r_{2}$ come into play. These two random numbers (drawn from a uniform distribution [0, 1]) allow to ensure some diversity in the behavior of the particles, and to avoid premature convergence to a local minimum (all the particles converge to a local minimum before reaching the global minimum).
@@ -67,7 +71,9 @@ The stopping criterion can be a maximum number of iteration, the number of times
 
 ## 3. How to implement PSO in Python?
 
-Implementing PSO in Python takes litterally few lines of code. Let's start by defining the needs.
+Implementing PSO in Python takes litterally few lines of code. However, I prefer to split in two subsections to give details about each class.
+
+### 3.1 Implementing the Particle class
 
 First, we need to define a class to describe each particle. The particle will have the following attributes:
 - its position in an arbitrary n-dimensional space
@@ -75,59 +81,18 @@ First, we need to define a class to describe each particle. The particle will ha
 - its best position
 - its best score
 
-Then, we need to define a class to describe the swarm. The swarm will have the following attributes:
-- a list of particles
-- the global best position
-- the global best score
-- the objective function to optimize
-- the stopping criterion (maximum number of iterations)
+The n-dimensional search space has boundaries which can differ from one dimension to another (you can try to search the optimal solution in an infinite space but it can be very long). To handle this, we'll use a list of tuples which represents the bounds of each dimension of the search space: `bounds: List[Tuple[float, float]]`. Consequently, the current position, the best position and the velocity of each particle will have a size equal to the number of dimensions (`len(bounds)`). 
 
+The score and best score of each particle correspond to the value of the objective function at the current position and the best position respectively. Since the goal will be to find the minimum of the objective function, the scores will be initialized to infinity to ensure that the first evaluation is better that the initial value. If we want to find the maximum of the objective function, we'll need to initialize the score and the best score to negative infinity.
 
-A particle is an object with a position and a velocity and which evolves in an arbitrary n-dimensional space.
-
-To handle arbitrary n-dimensional space, we'll use a list of tuples which represents the bounds of each dimension of the search space: `bounds: List[Tuple[float, float]]`. Consequently, the current position, the best position and the velocity of each particle will have a size equal to the number of dimensions (`len(bounds)`). The score and best score of each particle correspond to the value of the objective function at the current position and the best position respectively. Since the goal will be to find the minimum of the objective function, the scores will be initialized to infinity to ensure that the first evaluation is better that the initial value. If we want to find the maximum of the objective function, we'll need to initialize the score and the best score to negative infinity.
-
+The corresponding code is:
 ```python
 import numpy as np
 from typing import Callable, List, Tuple
 
-import numpy as np
-
 class Particle:
-    """
-    A particle is an object with a position and a velocity and which evolves in an arbitrary
-    n-dimensional space.
-
-    Attributes
-    ----------
-    position : np.ndarray
-        The position of the particle in the search space
-    velocity : np.ndarray
-        The velocity of the particle in the search space
-    best_position : np.ndarray
-        The best position of the particle in the search space
-    best_score : float
-        The best score of the particle
-
-    Methods
-    --------
-    update_velocity(self, gbest_position, inertia, cognitive, social):
-        Update the velocity of the particle
-    update_position(self, bounds: List[Tuple[float, float]]):
-        Update the position of the particle
-    evaluate(self, fitness_function: Callable):
-        Evaluate the fitness of the particle
-    """
 
     def __init__(self, bounds: List[Tuple[float, float]]) -> None:
-        """
-        Initialize the position, velocity, score, best position and best score of the particle
-
-        Parameters
-        ----------
-        bounds : List[Tuple[float, float]]
-            The bounds of the search space
-        """
 
         # Initialize position of the particle in the search space and velocity to 0
         self.position = np.array([np.random.uniform(low, high) for low, high in bounds])
@@ -139,132 +104,118 @@ class Particle:
 
         # Initialize best position of the particle to its current position
         self.pbest_position = self.position.copy()
-    
-    def evaluate(self, fitness_function: Callable) -> None:
-        """
-        Evaluate the score of the particle and update the best position and score if the score is
-        lower than the current best score
+```
 
-        Parameters
-        ----------
-        fitness_function : Callable
-            The objective function to optimize
-        """
-        self.score = fitness_function(self.position)
+Now we need to define the methods. The `Particle` class will have the following methods:
+- update the velocity
+- update the position
+- evaluate the score based on the objective function
+
+This part of the code is quite simple, the only thing to take care of is to ensure that the position of the particle is within the bounds of the search space. This is done in the `update_position` method by using the `np.clip` function from the `numpy` library. If the particle is out of bounds, it will be clipped to the closest bound.
+
+The `Callable` type is used to define a function that can be called with any arguments. In our case, it allows to pass the objective function as an argument to the `evaluate` method.
+ 
+```python
+import numpy as np
+from typing import Callable, List, Tuple
+
+import numpy as np
+
+class Particle:
+
+    def __init__(self, bounds: List[Tuple[float, float]]) -> None:
+
+        # ... the code above
+    
+    def evaluate(self, objective_function: Callable) -> None:
+        self.score = objective_function(self.position)
         if self.score < self.pbest_score:
             self.pbest_score = self.score
             self.pbest_position = self.position.copy()
 
     def update_velocity(self, gbest_position, inertia, cognitive, social) -> None:
-        """
-        Update the velocity of the particle
-
-        Parameters
-        ----------
-        gbest_position : np.ndarray
-            The global best position of the swarm
-        inertia : float
-            The inertia weight
-        cognitive : float
-            The cognitive constant
-        social : float
-            The social constant
-        """
         r1, r2 = np.random.rand(), np.random.rand()
-        cognitive = cognitive * r1 * (self.pbest_position - self.position)
-        social = social * r2 * (gbest_position - self.position)
-        self.velocity = inertia * self.velocity + cognitive + social
+        # Calculate the cognitive and social terms
+        cognitive_term = cognitive * r1 * (self.pbest_position - self.position)
+        social_term = social * r2 * (gbest_position - self.position)
+        # Update the velocity
+        self.velocity = inertia * self.velocity + cognitive_term + social_term
 
     def update_position(self, bounds: List[Tuple[float, float]]) -> None:
-        """
-        Update the position of the particle
-
-        Parameters
-        ----------
-        bounds : List[Tuple[float, float]]
-            The bounds of the search space
-        """
+        # Update the position
         self.position += self.velocity
+        # Ensure the position is within the bounds else set it to the bounds
         self.position = np.clip(self.position, [b[0] for b in bounds], [b[1] for b in bounds])
+```
+
+### 3.2 Implementing the Swarm class
+
+Now it is time to define the swarm class. The swarm will have the following attributes:
+- a list of particles
+- the global best position
+- the global best score
+- the objective function to optimize
+- the bounds of the search space
+
+```python
+import numpy as np
+from typing import Callable, List, Tuple
+
+class Particle:
+
+    # ... The particle class implementation
 
 class Swarm:
-    """
-    A swarm is a collection of particles and which evolves in an arbitrary n-dimensional space.
 
-    Attributes
-    ----------
-    particles : List[Particle]
-        The particles of the swarm
-    gbest_position : np.ndarray
-        The global best position of the swarm
-    gbest_value : float
-        The global best score of the swarm
-    fitness_function : Callable
-        The objective function to optimize
-    bounds : List[Tuple[float, float]]
-        The bounds of the search space
-
-    Methods
-    --------
-    optimize(self, num_iterations, inertia=0.7, cognitive=2.1, social=2.1):
-        Optimize the objective function
-    """
-
-    def __init__(self, num_particles: int, bounds: List[Tuple[float, float]], fitness_function: Callable) -> None:
-        """
-        Initialize the swarm
-
-        Parameters
-        ----------
-        num_particles : int
-            The number of particles in the swarm
-        bounds : List[Tuple[float, float]]
-            The bounds of the search space
-        fitness_function : Callable
-            The objective function to optimize
-        """
+    def __init__(self, num_particles: int, bounds: List[Tuple[float, float]], objective_function: Callable) -> None:
+        # Initialize each particle of the swarm
         self.particles = [Particle(bounds) for _ in range(num_particles)]
+        # Initialize the global best position and best score
         self.gbest_position = None
         self.gbest_score = float('inf')
-        self.fitness_function = fitness_function
+        self.objective_function = objective_function
         self.bounds = bounds
+```
+
+Contrary to the `Particle` class, the swarm class will have only one method to facilitate comprehension but you are free to split it in multiple small methods. 
+
+This method will optimize the objective function by updating the velocity and position of each particle and updating the global best position and score. 
+
+Before beginning the loop over iterations, the only thing to care of is make sure that each particle's initial position is assessed so that we can determine the swarm's optimal position and score.
+
+The method is implemented as follows:
+
+```python
+import numpy as np
+from typing import Callable, List, Tuple
+
+class Particle:
+
+    # ... The particle class implementation
+
+class Swarm:
+
+    def __init__(self, num_particles: int, bounds: List[Tuple[float, float]], objective_function: Callable) -> None:
+
+        # ... 
 
     def optimize(self, num_iterations: int, inertia: float=0.7, cognitive: float=2.1, social: float=2.1) -> Tuple[np.ndarray, float]:
-        """
-        Optimize the objective function
 
-        Parameters
-        ----------
-        num_iterations : int
-            The number of iterations
-        inertia : float
-            The inertia weight
-        cognitive : float
-            The cognitive constant
-        social : float
-            The social constant
-
-        Returns
-        -------
-        Tuple[np.ndarray, float]
-            The global best position and the global best score
-        """
-        for particle in self.particles:  # Initial evaluation of particles
-            particle.evaluate(self.fitness_function)
+        # Initial evaluation of particles
+        for particle in self.particles: 
+            particle.evaluate(self.objective_function)
             if particle.score < self.gbest_score:
                 self.gbest_score = particle.score
                 self.gbest_position = particle.position.copy()
-            
-        print(particle.score, self.gbest_score)
         
-        for iter in range(num_iterations): # Start optimization
-            print("ITER::", iter, self.gbest_score)
+        # Start optimization
+        for iter in range(num_iterations):
+
             for particle in self.particles:
+
                 particle.update_velocity(self.gbest_position, inertia, cognitive, social)
                 particle.update_position(self.bounds)
                 particle.evaluate(self.fitness_function)
-                print("EVALUATE::", particle.score)
-                print(particle.score < self.gbest_score)
                 if particle.score < self.gbest_score:
                     self.gbest_score = particle.score
                     self.gbest_position = particle.position.copy()
@@ -272,105 +223,16 @@ class Swarm:
         return self.gbest_position, self.gbest_score
 ```
 
+As you can see the global best position is evaluated after each particle's evaluation. This is not always the case in PSO, sometimes the global best position is evaluatued after the whole swarm has been evaluated. However, as far as I know, it is the most common approach.
 
-```python
-import numpy as np
 
-class Particle:
+An that's it! We have implemented the Particle class and the Swarm class. Now we can use them to optimize an objective function.
 
-    def __init__(self, bounds: List[Tuple[float, float]]):
+## 4. Optimizing an objective function
 
-        # Initialize the position of the particle in the search space
-        self.position = np.array([np.random.uniform(low, high) for low, high in bounds])
+### 4.1 The Rosenbrock function
 
-        # Initialize the velocity of the particle to 0
-        self.velocity = np.zeros(len(bounds))
-
-        # Initialize the score to infinity
-        self.score = float('inf')
-
-        # Initialize the best position of the particle to its current position
-        self.best_position = self.position.copy()
-
-        # Initialize the best score to infinity
-        self.best_score = float('inf')
-```
-
-Then we need to define a method to update the velocity of each particle and another to update the position in search space. The `update_velocity` method will take as input the global best position, the inertia weight, the cognitive and social constants and the `update_position` method will take as input the bounds of the search space. To avoid particles to be out of bounds of the search space, we'll use the `np.clip` function in the `update_position` method.
-
-Finally, the `evaluate` method will take as input the objective function, calculate the score of the particle and update the best position and score if the score is lower than the current best score.
-
-```python
-import numpy as np
-
-class Particle:
-
-    # ... initialization ...
-
-    def update_velocity(self, global_best, w=0.7, c1=1.5, c2=1.5):
-        r1, r2 = np.random.rand(), np.random.rand()
-        cognitive = c1 * r1 * (self.best_position - self.position)
-        social = c2 * r2 * (global_best - self.position)
-        self.velocity = w * self.velocity + cognitive + social
-    
-    def update_position(self, bounds: List[Tuple[float, float]]):
-        # np.clip for each dimension
-        self.position += self.velocity
-        self.position = np.clip(self.position, [b[0] for b in bounds], [b[1] for b in bounds])
-
-    def evaluate(self, objective_function):
-        self.score = objective_function(self.position)
-        if self.score < self.best_score:
-            self.best_score = self.score
-            self.best_position = self.position.copy()
-```
-
-Now that we have a class to describe each particle, we can define a class to describe the swarm. The swarm will be composed of a list of particles and a global best position. It must also handle the inertia weight, the cognitive and social constants such as the function to optimize.
-
-Let's start by defining the swarm class init method:
-
-```python
-class Swarm:
-
-    def __init__(self, num_particles, bounds, max_iter, w, c1, c2, optimize_function):
-        # First we initialize the swarm with a list of particles
-        self.particles = [Particle(bounds) for _ in range(num_particles)]
-        self.bounds = bounds
-        # Then we initialize the global best position and best score
-        self.global_best_position = min(self.particles, key=lambda p: p.best_score).best_position
-        self.global_best_score = min(self.particles, key=lambda p: p.best_score).best_score
-        # Then we initialize the function to optimize and the max number of iterations
-        self.optimize_function = optimize_function
-        self.max_iter = max_iter
-        # Finally we initialize the inertia weight, the cognitive and social constants
-        self.w = w
-        self.c1 = c1
-        self.c2 = c2
-```
-
-Then we have to define a method to update the swarm throughout the iterations.
-
-```python
-class Swarm:
-
-    # ... initialization ...
-
-    def optimize(self):
-        for i in range(self.max_iter):
-
-            for particle in self.particles:
-                particle.update_velocity(self.global_best, self.w, self.c1, self.c2)
-                particle.update_position(self.bounds)
-                particle.evaluate(self.optimize_function)
-                self.global_best = min(self.particles, key=lambda p: p.best_score).best_position
-                self.global_best_score = min(self.particles, key=lambda p: p.best_score).best_score
-        return self.global_best, self.global_best_score
-```
-
-And...that's it! Congratulations! You have successfully implemented PSO in Python.
-So, what's next? Let's optimize a 2D benchmark function.
-
-## 4. Optimizing a 2D benchmark function
+As an objective function, I chose a common 2D benchmark function.
 
 Benchmark functions are standard mathematical functions used to test and compare optimization algorithms. They allow to evaluate how well an algorithm performs on finding the best solution in a given problem domain. Each is designed  to highlight different optimization difficulties and challenges, such as multiple local minima, flat regions, etc.
 
@@ -379,10 +241,12 @@ $$f(x, y) = (a - x)^2 + b(y - x^2)^2\ ,$$
 where $x$ and $y$ are the coordinates of a point in a 2D space. Parameters $a$ and $b$ control the shape of the function and are generally fixed at $1$ and $100$, respectively.
 The global minimum of the function is located at $(x, y)=(a, a^2)$.
 
+![rosenbrock](rosenbrock.png)
+
 We can implement this function in Python as follows:
 
 ```python
-import numpy as np
+# ... PSO implementation ...
 
 def rosenbrock(coordinates):
     # Here the coordinates is the position of the particle
@@ -390,32 +254,53 @@ def rosenbrock(coordinates):
     return (1 - x)**2 + 100*(y - x**2)**2
 ```
 
-![rosenbrock](rosenbrock.png)
+In our case, the minimum of the Rosenbrock function is located at $(x, y)=(1, 1)$.
 
-Now that we have defined the Rosenbrock function, let's optimize it using PSO.
+### 4.2 Finding the global minimum using PSO
+
+Now that we have defined the Rosenbrock function, let's optimize it using PSO. We keep the same boundarys as before and optimize the Rosenbrock function for 10 particles 200 iterations. We let the default values for inertia weight (0.7), the cognitive (2.1) and the social constant (2.1).
 
 ```python
 import numpy as np
+
 class Particle:
-    ...
+    # ...
     
 class Swarm:
-    ...
+    # ...
 
 def rosenbrock(coordinates):
-    ...
+    # ...
 
 if __name__ == "__main__":
+    # Define the bounds of the search space
     bounds = [(-2, 2), (-1, 3)]
-    swarm = Swarm(num_particles=10, bounds=bounds, max_iter=100, w=0.5, c1=0.5, c2=0.5, optimize_function=rosenbrock)
-    best_position, best_score = swarm.optimize()
+    max_iterations = 200
+    
+    # Initialize the swarm
+    swarm = Swarm(num_particles=10, bounds=bounds, optimize_function=rosenbrock)
+    
+    # Run the optimization
+    best_position, best_score = swarm.optimize(num_iterations=max_iterations)
+    
+    # Print the results
     print(f"Best position: {best_position}")
     print(f"Best score: {best_score}")
 ```
 
-ADD DISTRIBUTION OF PARTICLES AT START AND END OF OPTIMIZATION
+After running the code, I get the following results:
+- Best position: [0.99999276 0.99998353]
+- Best score: 4.4429297184307526e-10
 
-## 6. What's Next?
+As you can see, the best position is close to the global minimum of the Rosenbrock function (1,1) and the best score is close to 0. Of course, since the initialization of the swarm is random, the results may vary.
+
+You can see the initial and final positions of the particles in the following plot:
+
+![PSO initial and final positions](pso_initial_final.png)
+
+If fact, have the best position near the global minimum does not mean that all particles are near the global minimum. And it is a good things since it means that some particles continue to explore the search space while others exploit the best positions found.
+
+## 5. What's Next?
 
 Now that you’ve implemented PSO from scratch, try tweaking the parameters! How does changing the inertia weight affect convergence? What happens if you optimize a different function?
 

@@ -1,4 +1,4 @@
-> **Article in progress**
+> **Article published on [dev.to](https://dev.to/damien_pageot_bf8f2c5f386/particle-swarm-optimization-and-its-implementation-in-python-58ld) (2025-02-14)**
 
 # Particle Swarm Optimization and Its implementation in Python
 
@@ -52,7 +52,7 @@ First, let's decompose the second formula into its three terms to best understan
 
 It means that the displacement of a particle in the search space (first equation) is a combination of its own velocity, the swarm's best position and its own best position. High inertia and high social constant will favorise exploration of the search space, while low inertia and high cognitive constant will favorise exploitation of the best positions found. 
 
-The plot below shows how the particle's velocity is influenced by the three terms and how the values of inertia, social and cognitive constants affect the particle's future position.
+The plot below shows how the particle's velocity is influenced by the three terms and how the values of inertia, social and cognitive constants affect the particle's future position. Don't care about the values of the constants, they have been chosen only to illustrate the effect of each term.
 
 ![PSO composition](particle_composition.png)
 
